@@ -17,8 +17,11 @@ if [ ! -z "$INPUT_WORKDIR" ]; then
     INPUT_OPTIONS="$INPUT_OPTIONS -w /$INPUT_WORKDIR"
 fi
 
+echo "$INPUT_RUN" > /tmp/input_script
+chmod 755 /tmp/input_script
+INPUT_OPTIONS="$INPUT_OPTIONS -v /tmp/input_script:/tmp/input_script"
 INPUT_OPTIONS="$INPUT_OPTIONS -v /var/run/docker.sock:/var/run/docker.sock"
 INPUT_IMAGE="$(echo "$INPUT_IMAGE" | tr '[:upper:]' '[:lower:]')"
 
 exec docker run $INPUT_OPTIONS --entrypoint="$INPUT_SHELL" "$INPUT_IMAGE" \
-    -c "${INPUT_RUN//$'\n'/;}"
+    -c /tmp/input_script

@@ -45,19 +45,27 @@ jobs:
       - uses: actions/checkout@v2
       - name: Create File to be mounted
         run: echo "some text" > someFile
-      - name: Run docker action with mounted workspace
+      - name: Run docker action without mounted workspace
         uses: ./
-        id: run-docker
+        id: run-unmounted
         with:
           image: docker
-          options: -v ${{ github.workspace }}:/work
+          mount_workspace: false
+          run: |
+            test ! -f /work/someFile
+      - name: Run docker action with mounted workspace
+        uses: ./
+        id: run-mounted
+        with:
+          image: docker
+          mount_workspace: true
           run: |
             echo "::set-output name=file-contents::`cat /work/someFile`"
       - name: Check if file contents match
         uses: actions/github-script@v3
         with:
           script: |
-            const fileContents = '${{ steps.run-docker.outputs.file-contents }}';
+            const fileContents = '${{ steps.run-mounted.outputs.file-contents }}';
             if (fileContents !== 'some text') {
               core.setFailed(`Unable to mount workspace volume`);
             }

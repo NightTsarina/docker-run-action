@@ -1,27 +1,56 @@
 #!/usr/bin/env bash
 
-if [ ! -z "$INPUT_USERNAME" ]; then
-    echo "$INPUT_PASSWORD" | \
-        docker login "$INPUT_REGISTRY" -u "$INPUT_USERNAME" --password-stdin
-fi
+set -x
 
-if [ ! -z "$INPUT_DOCKER_NETWORK" ]; then
-    INPUT_OPTIONS="$INPUT_OPTIONS --network $INPUT_DOCKER_NETWORK"
-fi
+find_envvars() {
+  local IFS='='
+  printenv --null | \
+  while read -d '' key val; do
+    case "$key" in
+      ACTIONS_* | GITHUB_* | RUNNER_* | HOME | CI)
+        echo "$key"
+        ;;
+      *)
+        ;;
+    esac
+  done
+}
 
-if [ "$INPUT_MOUNT_WORKSPACE" = true ]; then
-    INPUT_OPTIONS="$INPUT_OPTIONS -v $RUNNER_WORKSPACE:/github/workspace"
-fi
+notice_cmd() {
+  echo "echo '::notice::$@'"
+}
 
-if [ ! -z "$INPUT_WORKDIR" ]; then
-    INPUT_OPTIONS="$INPUT_OPTIONS -w /$INPUT_WORKDIR"
-fi
+notice() {
+  echo "::notice::$@"
+}
 
-echo "$INPUT_RUN" > /tmp/input_script
-chmod 755 /tmp/input_script
-INPUT_OPTIONS="$INPUT_OPTIONS -v /tmp/input_script:/tmp/input_script"
-INPUT_OPTIONS="$INPUT_OPTIONS -v /var/run/docker.sock:/var/run/docker.sock"
+# Ensure lower-case image name.
 INPUT_IMAGE="$(echo "$INPUT_IMAGE" | tr '[:upper:]' '[:lower:]')"
 
-exec docker run $INPUT_OPTIONS --entrypoint="$INPUT_SHELL" "$INPUT_IMAGE" \
-    -c /tmp/input_script
+# Prepare entry-point script.
+TMPDIR=$(mktemp -d)
+USER_SCRIPT="${TMPDIR}"/user_script
+
+notice_cmd "Starting user script..." > "${USER_SCRIPT}"
+echo "$INPUT_RUN" >> "${USER_SCRIPT}"
+notice_cmd "Finished user script." >> "${USER_SCRIPT}"
+
+ARGS=()
+ARGS+=(--rm)
+ARGS+=(--interactive)
+ARGS+=(-v /var/run/docker.sock:/var/run/docker.sock)
+ARGS+=(-v "${RUNNER_WORKSPACE}:${GITHUB_WORKSPACE}")
+ARGS+=(-w "${GITHUB_WORKSPACE}")
+
+if [ ! -z "$INPUT_DOCKER_NETWORK" ]; then
+    ARGS+=(--network "$INPUT_DOCKER_NETWORK")
+fi
+
+# Re-export environment.
+for var in $(find_envvars); do
+  ARGS+=(-e "$var")
+done
+
+notice Launching Docker..
+exec docker run "${ARGS[@]}" $INPUT_OPTIONS "$INPUT_IMAGE" ${INPUT_SHELL:-sh}
+    < "${USER_SCRIPT}"

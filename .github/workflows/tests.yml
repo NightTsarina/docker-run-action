@@ -44,7 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Create File to be mounted
-        run: echo "some text" > someFile
+        run: |
+          echo "some text" > $GITHUB_WORKSPACE/someFile
       - name: Run docker action without mounted workspace
         uses: ./
         id: run-unmounted
@@ -52,7 +53,7 @@ jobs:
           image: docker
           mount_workspace: false
           run: |
-            test ! -f /work/someFile
+            test ! -f $GITHUB_WORKSPACE/someFile
       - name: Run docker action with mounted workspace
         uses: ./
         id: run-mounted
@@ -60,7 +61,7 @@ jobs:
           image: docker
           mount_workspace: true
           run: |
-            echo "::set-output name=file-contents::`cat /work/someFile`"
+            echo "::set-output name=file-contents::`cat $GITHUB_WORKSPACE/someFile`"
       - name: Check if file contents match
         uses: actions/github-script@v3
         with:

@@ -3,18 +3,18 @@ name: 'Docker Run Action'
 description: 'Run a command in a new container'
 inputs:
   image:
-    description: 'Image'
+    description: 'Docker Image'
     required: true
   options:
-    description: 'Options'
+    description: 'Docker CLI options'
     required: false
   run:
-    description: 'Run command in container'
+    description: 'Command to run in container'
     required: false
   shell:
     description: 'Use a specific shell'
     required: false
-    default: sh
+    default: sh -ex
   registry:
     description: 'Registry'
     required: false
@@ -28,13 +28,7 @@ inputs:
     description: 'Docker Network ID'
     default: ${{ job.container.network }}
     required: false
-  mount_workspace:
-    description: 'Bind-mount the GitHub workspace'
-    required: false
-  workdir:
-    description: 'Workdir for the container'
-    required: false
-    default: /github/workspace/${{ github.event.repository.name }}
+
 runs:
   using: 'docker'
   image: 'Dockerfile'

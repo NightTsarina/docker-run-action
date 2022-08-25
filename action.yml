@@ -31,6 +31,10 @@ inputs:
   mount_workspace:
     description: 'Bind-mount the GitHub workspace'
     required: false
+  workdir:
+    description: 'Workdir for the container'
+    required: false
+    default: /github/workspace/${{ github.event.repository.name }}
 runs:
   using: 'docker'
   image: 'Dockerfile'

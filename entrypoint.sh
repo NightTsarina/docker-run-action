@@ -13,6 +13,10 @@ if [ "$INPUT_MOUNT_WORKSPACE" = true ]; then
     INPUT_OPTIONS="$INPUT_OPTIONS -v $RUNNER_WORKSPACE:/github/workspace"
 fi
 
+if [ ! -z "$INPUT_WORKDIR" ]; then
+    INPUT_OPTIONS="$INPUT_OPTIONS -w /$INPUT_WORKDIR"
+fi
+
 INPUT_OPTIONS="$INPUT_OPTIONS -v /var/run/docker.sock:/var/run/docker.sock"
 INPUT_IMAGE="$(echo "$INPUT_IMAGE" | tr '[:upper:]' '[:lower:]')"
 
